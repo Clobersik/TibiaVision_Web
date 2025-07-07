@@ -9,8 +9,8 @@
 set -e
 
 # --- Zmienne Konfiguracyjne ---
-GIT_REPO_URL="https://github.com/twoja-nazwa-uzytkownika/tibia-vision-app.git"
-APP_DIR_NAME="tibia-vision-app"
+GIT_REPO_URL="https://github.com/Clobersik/TibiaVision_Web.git"
+APP_DIR_NAME="TibiaVision_Web"
 # Pełna ścieżka do katalogu aplikacji
 APP_DIR="$(pwd)/$APP_DIR_NAME"
 BACKUP_DIR="$(pwd)/tibia-vision-backups"
