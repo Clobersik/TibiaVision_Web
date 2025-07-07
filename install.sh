@@ -9,7 +9,7 @@
 set -e
 
 # --- Zmienne Konfiguracyjne ---
-GIT_REPO_URL="git@github.com:clobersik/TibiaVision_Webo.git" 
+GIT_REPO_URL="git@github.com:clobersik/TibiaVision_Web.git" 
 APP_DIR_NAME="TibiaVision_Web"
 # Pełna ścieżka do katalogu aplikacji
 APP_DIR="$(pwd)/$APP_DIR_NAME"
