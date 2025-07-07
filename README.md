@@ -1,28 +1,60 @@
-Jak zarządzać aplikacją TibiaVision z automatycznym utrzymaniem
-Skrypt instalacyjny został rozbudowany o funkcje automatycznego restartu i tworzenia kopii zapasowych za pomocą zadań cron.
-Krok 1: Przygotowanie (bez zmian)
-Kod w Git: Upewnij się, że cały kod aplikacji, włączając w to nowy plik app/check_active.py, znajduje się w Twoim repozytorium na GitHubie.
-Skrypt install.sh: Skopiuj powyższy, zaktualizowany kod skryptu, wklej w nim URL do swojego repozytorium i udostępnij go online (np. przez GitHub Gist).
-Krok 2: Instalacja i konfiguracja Cron
-Zaloguj się na swój serwer VPS i wykonaj komendę instalacyjną:
+TibiaVision z Automatycznym Utrzymaniem
+Ten projekt zawiera aplikację TibiaVision wraz ze skryptem instalacyjnym, który automatyzuje proces wdrożenia, aktualizacji, restartów i tworzenia kopii zapasowych.
+
+Wymagania wstępne
+Przed rozpoczęciem instalacji upewnij się, że posiadasz:
+
+Serwer VPS z systemem operacyjnym opartym na Debianie (np. Ubuntu).
+
+Zainstalowany curl i sudo.
+
+Podstawową wiedzę na temat pracy w terminalu Linux.
+
+Instalacja
+Proces instalacji jest w pełni zautomatyzowany. Wystarczy jedna komenda, aby pobrać, zainstalować i uruchomić aplikację oraz skonfigurować zadania cron do jej utrzymania.
+
+Zaloguj się na swój serwer VPS przez SSH.
+
+Wykonaj poniższą komendę, podmieniając [URL_DO_TWOJEGO_SKRYPTU] na bezpośredni link do Twojego pliku install.sh (np. z GitHub Gist).
+
+Bash
+
 curl -sSL [URL_DO_TWOJEGO_SKRYPTU] | sudo bash -s install
+Podczas instalacji zostaniesz poproszony o zdefiniowanie interwału dla automatycznych kopii zapasowych.
 
-
-Podczas instalacji, skrypt poprosi Cię o podanie interwału (w godzinach) dla automatycznych kopii zapasowych.
 Co ile godzin chcesz wykonywac automatyczny backup? (np. 6, 12, 24) [6]:
+Możesz wpisać własną wartość (w godzinach) lub nacisnąć Enter, aby zaakceptować domyślne 6 godzin.
 
+Po zakończeniu, aplikacja będzie uruchomiona w kontenerach Docker, a zadania cron zostaną dodane do systemu.
 
-Możesz wcisnąć Enter, aby zaakceptować domyślną wartość (6 godzin), lub wpisać własną.
-Po zakończeniu, skrypt automatycznie doda dwa zadania do systemu cron na Twoim serwerze:
-Codzienny, bezpieczny restart: Każdego dnia o 4:00 rano, skrypt sprawdzi, czy aplikacja nie przetwarza wideo. Jeśli jest bezczynna, zrestartuje kontenery Docker.
-Okresowy backup: Zgodnie z wybranym przez Ciebie interwałem, skrypt będzie tworzył spakowaną kopię zapasową danych.
-Krok 3: Aktualizacja
-Proces aktualizacji pozostaje taki sam. Użyj komendy:
+Automatyzacja i Zarządzanie
+Skrypt instalacyjny konfiguruje dwa kluczowe zadania cron w celu zapewnienia stabilności i bezpieczeństwa danych aplikacji.
+
+Automatyczny restart
+Cel: Zapewnienie stabilnego działania aplikacji.
+
+Harmonogram: Codziennie o godzinie 4:00 rano.
+
+Działanie: Skrypt check_active.py sprawdza, czy aplikacja aktualnie przetwarza wideo. Jeśli jest bezczynna, kontenery Docker zostaną bezpiecznie zrestartowane. Jeśli jest aktywna, restart zostanie pominięty.
+
+Automatyczne kopie zapasowe
+Cel: Ochrona danych przed utratą.
+
+Harmonogram: Zgodnie z interwałem zdefiniowanym podczas instalacji (np. co 6, 12 lub 24 godziny).
+
+Działanie: Skrypt tworzy skompresowaną kopię zapasową (.tar.gz) całego katalogu z danymi aplikacji.
+
+Logi i Kopie Zapasowe
+Wszystkie pliki generowane przez skrypty utrzymania są łatwo dostępne.
+
+Logi z zadań cron: Informacje o wykonanych restartach i backupach znajdziesz w pliku cron.log, który jest zlokalizowany w głównym katalogu aplikacji (tibia-vision-app).
+
+Kopie zapasowe: Wszystkie archiwa z backupami są zapisywane w katalogu tibia-vision-backups, znajdującym się na tym samym poziomie co katalog aplikacji.
+
+Aktualizacja Aplikacji
+Aby zaktualizować aplikację do najnowszej wersji z Twojego repozytorium Git, użyj tej samej komendy co przy instalacji, zmieniając jedynie argument z install na update.
+
+Bash
+
 curl -sSL [URL_DO_TWOJEGO_SKRYPTU] | sudo bash -s update
-
-
-Podczas aktualizacji, skrypt również odświeży zadania cron, na wypadek gdybyś wprowadził zmiany w logice restartu lub backupu.
-Gdzie są logi i backupy?
-Logi z zadań cron: W katalogu tibia-vision-app pojawi się plik cron.log, w którym znajdziesz informacje o wykonanych restartach i backupach.
-Kopie zapasowe: Wszystkie backupy będą zapisywane w katalogu tibia-vision-backups (na tym samym poziomie co katalog aplikacji).
-Dzięki tym zmianom, Twoja aplikacja jest teraz nie tylko łatwa do wdrożenia, ale również wyposażona w mechanizmy zapewniające jej długoterminową stabilność i bezpieczeństwo danych.
+Proces aktualizacji pobierze najnowszy kod, przebuduje kontenery Docker i odświeży zadania cron, aby uwzględnić ewentualne zmiany w logice utrzymania.
