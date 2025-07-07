@@ -7,7 +7,7 @@ set -e
 
 # --- Zmienne Konfiguracyjne ---
 # Adres URL repozytorium w formacie SSH
-GIT_REPO_URL="git@github.com:Clobersik/TibiaVision_Web.git"
+GIT_REPO_URL="https://github.com/Clobersik/TibiaVision_Web.git"
 APP_DIR_NAME="TibiaVision_Web"
 # Pełna ścieżka do katalogu aplikacji
 APP_DIR="$(pwd)/$APP_DIR_NAME"
