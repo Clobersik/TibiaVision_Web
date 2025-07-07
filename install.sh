@@ -1,15 +1,13 @@
 #!/bin/bash
-# Skrypt do automatycznej instalacji, aktualizacji, backupu i konfiguracji cron dla TibiaVision.
-# Użycie:
-#   Instalacja: curl -sSL [URL] | sudo bash -s install
-#   Aktualizacja: curl -sSL [URL] | sudo bash -s update
-#   Backup: curl -sSL [URL] | sudo bash -s backup
+# Skrypt do automatycznej instalacji, aktualizacji i backupu aplikacji TibiaVision.
+# Używa klucza SSH do autoryzacji z repozytorium Git.
 
 # Zatrzymaj wykonywanie skryptu w przypadku błędu
 set -e
 
 # --- Zmienne Konfiguracyjne ---
-GIT_REPO_URL="git@github.com:clobersik/TibiaVision_Web.git" 
+# Adres URL repozytorium w formacie SSH
+GIT_REPO_URL="git@github.com:Clobersik/TibiaVision_Web.git"
 APP_DIR_NAME="TibiaVision_Web"
 # Pełna ścieżka do katalogu aplikacji
 APP_DIR="$(pwd)/$APP_DIR_NAME"
@@ -39,10 +37,7 @@ setup_cron_jobs() {
     # Skrypt do bezpiecznego restartu
     cat > "$APP_DIR/restart_safe.sh" <<'EOF'
 #!/bin/bash
-# Ten skrypt jest wywoływany przez cron.
-# Restartuje kontenery Docker tylko wtedy, gdy żadne zadanie nie jest przetwarzane.
 cd "$(dirname "$0")"
-# Uruchom skrypt sprawdzający wewnątrz kontenera, aby mieć dostęp do zależności
 if docker-compose exec -T web python app/check_active.py > /dev/null 2>&1; then
     echo "Brak aktywnych zadan. Restartowanie uslug... $(date)" >> cron.log
     docker-compose restart
@@ -55,10 +50,9 @@ EOF
     # Skrypt do backupu (wywoływany przez cron)
     cat > "$APP_DIR/backup_cron.sh" <<'EOF'
 #!/bin/bash
-cd "$(dirname "$0")"
-# Wywołaj główny skrypt z akcją backup
-# Przekieruj wyjście do logu
-bash ../install.sh backup >> cron.log 2>&1
+# Użyj ścieżki bezwzględnej do skryptu install.sh
+INSTALL_SCRIPT_PATH="$(dirname "$0")/../install.sh"
+bash "$INSTALL_SCRIPT_PATH" backup >> "$(dirname "$0")/cron.log" 2>&1
 EOF
     chmod +x "$APP_DIR/backup_cron.sh"
 
@@ -68,15 +62,11 @@ EOF
     (crontab -l 2>/dev/null; echo "0 */${BACKUP_INTERVAL:-6} * * * $APP_DIR/backup_cron.sh # TibiaVision Periodic Backup") | crontab -
 
     print_success "Zadania CRON skonfigurowane."
-    print_info "Codzienny restart o 4:00 rano."
-    print_info "Okresowy backup co ${BACKUP_INTERVAL:-6} godzin."
 }
 
 # --- Logika Instalacji ---
 do_install() {
     print_info "Rozpoczynanie nowej instalacji TibiaVision..."
-    # Instalacja zależności (git, docker, docker-compose)...
-    # ... (kod instalacji zależności pozostaje bez zmian) ...
     print_info "Sprawdzanie zależności..."
     if ! command -v git &> /dev/null; then apt-get update > /dev/null && apt-get install -y git; fi
     if ! command -v docker &> /dev/null; then apt-get update > /dev/null && apt-get install -y apt-transport-https ca-certificates curl software-properties-common && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && apt-get update > /dev/null && apt-get install -y docker-ce docker-ce-cli containerd.io && usermod -aG docker ${SUDO_USER:-$USER}; fi
@@ -84,7 +74,7 @@ do_install() {
     print_success "Zależności zainstalowane."
 
     if [ -d "$APP_DIR_NAME" ]; then print_error "Katalog '$APP_DIR_NAME' już istnieje."; fi
-    print_info "Klonowanie repozytorium..."
+    print_info "Klonowanie repozytorium (przez SSH)..."
     git clone "$GIT_REPO_URL" "$APP_DIR_NAME"
     cd "$APP_DIR_NAME" || exit
     if [ ! -f "map.png" ]; then touch map.png; fi
@@ -92,7 +82,6 @@ do_install() {
     print_info "Budowanie i uruchamianie kontenerów..."
     docker-compose up --build -d
     
-    # Konfiguracja Cron po instalacji
     read -p "Co ile godzin chcesz wykonywac automatyczny backup? (np. 6, 12, 24) [6]: " BACKUP_INTERVAL
     setup_cron_jobs
     
@@ -105,11 +94,10 @@ do_update() {
     print_info "Rozpoczynanie aktualizacji TibiaVision..."
     do_backup
     cd "$APP_DIR" || print_error "Nie można wejść do katalogu aplikacji."
-    print_info "Pobieranie najnowszych zmian z Git..."
+    print_info "Pobieranie najnowszych zmian z Git (przez SSH)..."
     git pull
     print_info "Przebudowywanie i restartowanie kontenerów..."
     docker-compose up --build -d
-    # Ponowna konfiguracja crona, na wypadek zmian w skryptach
     setup_cron_jobs
     print_success "Aplikacja TibiaVision została pomyślnie zaktualizowana!"
 }
@@ -127,4 +115,3 @@ main() {
 }
 
 main "$@"
-
