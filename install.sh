@@ -1,6 +1,6 @@
 #!/bin/bash
 # Skrypt do automatycznej instalacji, aktualizacji i backupu aplikacji TibiaVision.
-# Wersja poprawiona - rozwiązuje problem uprawnień Docker i inteligentnie wykrywa wersję docker-compose.
+# Wersja finalna - rozwiązuje problem uprawnień Docker i inteligentnie wykrywa wersję docker-compose.
 
 # Zatrzymaj wykonywanie skryptu w przypadku błędu
 set -e
@@ -55,8 +55,15 @@ EOF
     # Skrypt do backupu (wywoływany przez cron)
     cat > "$APP_DIR/backup_cron.sh" <<'EOF'
 #!/bin/bash
+# Użyj ścieżki bezwzględnej do skryptu install.sh
+# Skrypt jest w katalogu nadrzędnym w stosunku do APP_DIR
 INSTALL_SCRIPT_PATH="$(dirname "$0")/../install.sh"
-bash "$INSTALL_SCRIPT_PATH" backup >> "$(dirname "$0")/cron.log" 2>&1
+# Sprawdź, czy plik istnieje, zanim go uruchomisz
+if [ -f "$INSTALL_SCRIPT_PATH" ]; then
+    bash "$INSTALL_SCRIPT_PATH" backup >> "$(dirname "$0")/cron.log" 2>&1
+else
+    echo "Nie znaleziono skryptu install.sh w $(dirname "$INSTALL_SCRIPT_PATH")" >> "$(dirname "$0")/cron.log" 2>&1
+fi
 EOF
     chmod +x "$APP_DIR/backup_cron.sh"
 
@@ -85,12 +92,14 @@ do_install() {
     
     if ! docker compose version &> /dev/null && ! command -v docker-compose &> /dev/null; then
         print_info "Instalowanie Docker Compose (standalone)..."
-        curl -L "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
+        # Użycie nowszej wersji i oficjalnej ścieżki
+        DESTINATION=/usr/local/bin/docker-compose
+        sudo curl -L "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-$(uname -s)-$(uname -m)" -o $DESTINATION
+        sudo chmod +x $DESTINATION
     fi
     print_success "Zależności zainstalowane."
 
-    if [ -d "$APP_DIR_NAME" ]; then print_error "Katalog '$APP_DIR_NAME' już istnieje."; fi
+    if [ -d "$APP_DIR_NAME" ]; then print_error "Katalog '$APP_DIR_NAME' już istnieje. Użyj 'update' lub usuń go ręcznie."; fi
     print_info "Klonowanie repozytorium (przez HTTPS)..."
     git clone "$GIT_REPO_URL" "$APP_DIR_NAME"
     cd "$APP_DIR_NAME" || exit
