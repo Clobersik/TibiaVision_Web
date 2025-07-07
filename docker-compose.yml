@@ -1,0 +1,39 @@
+# docker-compose.yml
+# Definiuje usługi, sieci i wolumeny dla aplikacji TibiaVision.
+# Dodano serwis Redis do obsługi kolejki zadań.
+
+version: '3.8'
+
+services:
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    ports:
+      - "8080:5000"
+    volumes:
+      # Wolumen do przechowywania przesłanych plików wideo
+      - ./app/uploads:/tibia-vision-app/app/uploads
+      # Wolumen do przechowywania wyników analizy (w tym wizualizacji)
+      - ./app/output:/tibia-vision-app/app/output
+      # Wolumen dla bazy danych SQLite
+      - ./app/database:/tibia-vision-app/app/database
+    environment:
+      - FLASK_ENV=production
+    # Aplikacja webowa zależy od serwera Redis
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    command: python worker.py
+    volumes:
+      - ./app/uploads:/tibia-vision-app/app/uploads
+      - ./app/output:/tibia-vision-app/app/output
+      - ./app/database:/tibia-vision-app/app/database
+    # Worker również zależy od serwera Redis
+    depends_on:
+      - redis
